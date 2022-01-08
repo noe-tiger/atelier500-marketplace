@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 /* GET home page. */
-router.get('/', function (req, res, next) {
+router.get('/doc', function (req, res, next) {
   // send back a link in json
   res.json({
     message: 'Welcome to the API, here is the link',
