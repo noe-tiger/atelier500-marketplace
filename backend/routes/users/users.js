@@ -4,8 +4,8 @@ var router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 var mongoose = require('mongoose');
+const { validateToken } = require('../middleware/validateToken');
 
-// TODO : move to another file
 function generateAccessToken(user) {
   return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
 }
@@ -17,6 +17,7 @@ function generateRefreshToken(user) {
   return token;
 }
 
+// TODO : add address field
 var UserSchema = new mongoose.Schema({
   username: String,
   password: String,
@@ -101,7 +102,7 @@ router.post('/refreshToken', function (req, res, next) {
   res.json({ accessToken: accessToken, refreshToken: refreshToken })
 });
 
-router.delete("/logout", (req, res, next) => {
+router.delete("/logout", validateToken, (req, res, next) => {
   refreshTokens = refreshTokens.filter((c) => c != req.body.token)
 
   res.status(204).send("Logged out!")

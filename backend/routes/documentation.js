@@ -1,5 +1,5 @@
 var express = require('express');
-const { validateToken } = require('./validateToken');
+const { validateToken } = require('./middleware/validateToken');
 var router = express.Router();
 
 router.get('/doc', validateToken, (req, res, next) => {
