@@ -33,7 +33,7 @@ const validateEmail = (email) => {
   );
 };
 
-router.post('/', async (req, res, next) => {
+router.post('/create', async (req, res, next) => {
   const user = req.body.email
   const hashedPassword = await bcrypt.hash(req.body.password, 10)
 
@@ -43,12 +43,7 @@ router.post('/', async (req, res, next) => {
     });
   }
 
-  console.log(user)
-
   const emailExist = await UserModel.findOne({ username: user });
-
-  console.log(emailExist)
-
   if (emailExist) {
     return res.status(400).send({
       message: 'Account with that email address already exists'
@@ -79,8 +74,8 @@ router.post('/', async (req, res, next) => {
 
 });
 
-router.post('/login', function (req, res, next) {
-  const user = users.find((c) => c.user === req.body.name)
+router.post('/login', async (req, res, next) => {
+  const user = await UserModel.findOne({ username: req.body.email })
   if (user == null) res.status(404).send('User not found')
   bcrypt.compare(req.body.password, user.password).then(result => {
     if (result) {
@@ -99,19 +94,15 @@ router.post('/refreshToken', function (req, res, next) {
     res.status(400).send("Refresh Token Invalid")
 
   refreshTokens = refreshTokens.filter((c) => c != req.body.token)
-  //remove the old refreshToken from the refreshTokens list
 
   const accessToken = generateAccessToken({ user: req.body.name })
   const refreshToken = generateRefreshToken({ user: req.body.name })
-  //generate new accessToken and refreshTokens
 
   res.json({ accessToken: accessToken, refreshToken: refreshToken })
 });
 
 router.delete("/logout", (req, res, next) => {
   refreshTokens = refreshTokens.filter((c) => c != req.body.token)
-
-  //remove the old refreshToken from the refreshTokens list
 
   res.status(204).send("Logged out!")
 })
