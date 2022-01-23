@@ -3,6 +3,7 @@ var router = express.Router();
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+var mongoose = require('mongoose');
 
 // TODO : move to another file
 function generateAccessToken(user) {
@@ -16,16 +17,66 @@ function generateRefreshToken(user) {
   return token;
 }
 
-// TODO : handle w/ db
-var users = []
+var UserSchema = new mongoose.Schema({
+  username: String,
+  password: String,
+  firstName: String,
+  lastName: String,
+  created_on: Date,
+  modified_on: Date
+});
+var UserModel = mongoose.model('UserModel', UserSchema);
+
+const validateEmail = (email) => {
+  return email.match(
+    /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+  );
+};
 
 router.post('/', async (req, res, next) => {
-  const user = req.body.name
+  const user = req.body.email
   const hashedPassword = await bcrypt.hash(req.body.password, 10)
 
-  users.push({ user: user, password: hashedPassword })
+  if (!validateEmail(user)) {
+    return res.status(400).send({
+      message: 'Invalid email address'
+    });
+  }
 
-  res.status(201).send('respond with a resource');
+  console.log(user)
+
+  const emailExist = await UserModel.findOne({ username: user });
+
+  console.log(emailExist)
+
+  if (emailExist) {
+    return res.status(400).send({
+      message: 'Account with that email address already exists'
+    });
+  }
+
+  const newUser = new UserModel({
+    username: user,
+    password: hashedPassword,
+    firstName: req.body.firstname,
+    lastName: req.body.lastname,
+    created_on: new Date(),
+    modified_on: new Date()
+  })
+
+  newUser.save((err, doc) => {
+    if (err) {
+      res.status(500).send({
+        message: err.message
+      })
+    } else {
+      const accessToken = generateAccessToken({ user: user })
+      const refreshToken = generateRefreshToken({ user: user })
+
+      res.json({ "message": "User created successfully", "accessToken": accessToken, "refreshToken": refreshToken })
+    }
+  })
+
 });
 
 router.post('/login', function (req, res, next) {
@@ -43,7 +94,6 @@ router.post('/login', function (req, res, next) {
   });
 });
 
-// TODO : find the error
 router.post('/refreshToken', function (req, res, next) {
   if (!refreshTokens.includes(req.body.token))
     res.status(400).send("Refresh Token Invalid")
@@ -58,7 +108,6 @@ router.post('/refreshToken', function (req, res, next) {
   res.json({ accessToken: accessToken, refreshToken: refreshToken })
 });
 
-// TODO : find the error
 router.delete("/logout", (req, res, next) => {
   refreshTokens = refreshTokens.filter((c) => c != req.body.token)
 
