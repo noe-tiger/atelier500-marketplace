@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('backend:server');
 var http = require('http');
+const { connectToDb } = require('../routes/databaseHandler');
 require('dotenv').config();
 
 /**
@@ -89,3 +90,5 @@ function onListening() {
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+connectToDb();
