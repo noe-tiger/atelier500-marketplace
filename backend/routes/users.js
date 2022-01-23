@@ -3,7 +3,6 @@ var router = express.Router();
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { route } = require('.');
 
 // TODO : move to another file
 function generateAccessToken(user) {
@@ -20,11 +19,6 @@ function generateRefreshToken(user) {
 // TODO : handle w/ db
 var users = []
 
-/* GET users listing. */
-router.get('/', function (req, res, next) {
-  res.send('respond with a resource');
-});
-
 router.post('/', async (req, res, next) => {
   const user = req.body.name
   const hashedPassword = await bcrypt.hash(req.body.password, 10)
@@ -32,9 +26,6 @@ router.post('/', async (req, res, next) => {
   users.push({ user: user, password: hashedPassword })
 
   res.status(201).send('respond with a resource');
-
-  console.log(users)
-
 });
 
 router.post('/login', function (req, res, next) {
@@ -47,7 +38,7 @@ router.post('/login', function (req, res, next) {
 
       res.json({ "accessToken": accessToken, "refreshToken": refreshToken })
     } else {
-      res.status(401).send('Invalid password')
+      res.status(401).send('invalid login pair')
     }
   });
 });
@@ -67,9 +58,12 @@ router.post('/refreshToken', function (req, res, next) {
   res.json({ accessToken: accessToken, refreshToken: refreshToken })
 });
 
+// TODO : find the error
 router.delete("/logout", (req, res, next) => {
   refreshTokens = refreshTokens.filter((c) => c != req.body.token)
+
   //remove the old refreshToken from the refreshTokens list
+
   res.status(204).send("Logged out!")
 })
 
