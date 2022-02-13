@@ -91,8 +91,10 @@ router.post('/login', async (req, res, next) => {
 });
 
 router.post('/refreshToken', function (req, res, next) {
-  if (!refreshTokens.includes(req.body.token))
+  if (!refreshTokens.includes(req.body.token)) {
     res.status(400).send("Refresh Token Invalid")
+    return;
+  }
 
   refreshTokens = refreshTokens.filter((c) => c != req.body.token)
 

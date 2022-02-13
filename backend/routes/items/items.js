@@ -1,7 +1,7 @@
 var express = require('express');
 var mongoose = require('mongoose');
 
-const { validateToken } = require('../middleware/validateToken');
+const { validateToken, isAuth } = require('../middleware/validateToken');
 var router = express.Router();
 
 var ItemSchema = new mongoose.Schema({
@@ -64,11 +64,12 @@ router.post('/', validateToken, (req, res, next) => {
     });
 });
 
-router.get('/', (req, res, next) => {
+router.get('/', async (req, res, next) => {
     start_date = req.query?.start_date || null;
     end_date = req.query?.end_date || null;
     name = req.query?.name || "";
     limit_items = req.query?.limit || 20;
+    available = req.query?.available == "true" ? { $gt : 1 } : { $gt : -1 } || false;
 
     sort = req.query?.sort || "name";
     order = req.query?.order || -1;
@@ -83,17 +84,26 @@ router.get('/', (req, res, next) => {
     var sort_object = {};
     sort_object[sort] = order;
 
-    console.log(sort_object)
-
     if (start_date == null) start_date = new Date(0);
     if (end_date == null) end_date = new Date();
+
+    var authQuery = '';
+    var authed = false;
+    if (await isAuth(req) == true) {
+        authQuery = 'name description price availability article_state created_on modified_on weight image linked_articles size _id';
+        authed = true;
+    } else {
+        authQuery = 'name description price availability article_state image linked_articles -_id';
+    }
 
     ItemModel.find({
         modified_on: { $gt: start_date, $lte: end_date },
         name: new RegExp(name, 'i'),
+        availability: available
     }, null, {
         sort:  sort_object,
-        limit: limit_items
+        limit: limit_items,
+        select: authQuery,
     }, (err, items) => {
         if (err) {
             res.status(500).send(err);
